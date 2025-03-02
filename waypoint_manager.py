@@ -120,28 +120,6 @@ class WaypointManager:
 
         subplot_ax.legend()
 
-    def lineLineIntersection(self, A, B, C, D):
-        # Line AB represented as a1x + b1y = c1
-        a1 = B[1] - A[1]
-        b1 = A[0] - B[0]
-        c1 = a1*(A[0]) + b1*(A[1])
-    
-        # Line CD represented as a2x + b2y = c2
-        a2 = D[1] - C[1]
-        b2 = C[0] - D[0]
-        c2 = a2*(C[0]) + b2*(C[1])
-    
-        determinant = a1*b2 - a2*b1
-    
-        if (determinant == 0):
-            # The lines are parallel. This is simplified
-            # by returning a pair of FLT_MAX
-            return (10**9, 10**9)
-        else:
-            x = (b2*c1 - b1*c2)/determinant
-            y = (a1*c2 - a2*c1)/determinant
-            return (x, y)
-
     def get_collision_pairs(self, path: list[tuple[float, float, float]], fence: Polygon) -> list[tuple[tuple[float, float], tuple[float, float], tuple[float, float]]]:
         """
         Returns a list of tuple pairs containing the indicies of a medium point whose lines
@@ -155,8 +133,9 @@ class WaypointManager:
                 line2 = LineString([vertices[j], vertices[j + 1]])
                 p = line.intersects(line2)
                 if p:
-                    p = self.lineLineIntersection((path[i][0], path[i][1]), (path[i+1][0], path[i+1][1]), vertices[j], vertices[j + 1])
-                    pairs.append((path[i], path[i+1], p))
+                    pt = line.intersection(line2)
+                    pt = (pt.x, pt.y)
+                    pairs.append((path[i], path[i+1], pt))
                 
         return pairs
     
