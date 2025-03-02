@@ -28,8 +28,9 @@ class PolygonGeofence:
             fence = self.polygon
         return fence.exterior.coords[:]
     
-    def get_wedged_index(self, fence: Polygon, point: tuple[float, float]) -> int:
-        p = Polygon([(0.01 + point[0], point[1]), (point[0], 0.01 + point[1]), (-0.01 + point[0], point[1]), (point[0], -0.01 + point[1])])
+    def get_wedged_index(self, fence: Polygon, point: tuple[float, float], precision=0.01) -> int:
+        """Returns the index where our point would exist if it were in the fence verticies list"""
+        p = Polygon([(precision + point[0], point[1]), (point[0], precision + point[1]), (-precision + point[0], point[1]), (point[0], -precision + point[1])])
         vertices = self.get_verticies(fence)
         for i in range(len(vertices) - 1):
             line = LineString([vertices[i], vertices[i+1]])
@@ -37,6 +38,7 @@ class PolygonGeofence:
                 return i + 1
             
     def get_fence_path_direction(self, fence: list[tuple[float, float]], start:int, end:int, dir=0) -> tuple[float, list[tuple[float, float]]]:
+        """Returns the total distance and list of points for rerouted path direction along fence."""
         if dir:
             step = 1
         else:
@@ -61,10 +63,11 @@ class PolygonGeofence:
     def get_fence_path(self, fence: Polygon, path: list[tuple[int, int, tuple[float, float]]]) -> list[list[tuple[float, float]]]:
         output = []
         for i in range(0, len(path), 2):
-            idx1 = self.get_wedged_index(fence, path[i][2])
-            idx2 = self.get_wedged_index(fence, path[i + 1][2])
-            verticies = self.get_verticies(fence)[:-1]
+            idx1 = self.get_wedged_index(fence, path[i][2])  # Get first intersection point
+            idx2 = self.get_wedged_index(fence, path[i + 1][2])  # Get section intersection point
+            verticies = self.get_verticies(fence)[:-1]  # Verticies have repeat value at the end
             
+            # Add the intersection point properly into verticies
             if idx1 > idx2:
                 verticies.insert(idx1, path[i][2])
                 verticies.insert(idx2, path[i + 1][2])
@@ -74,8 +77,8 @@ class PolygonGeofence:
                 verticies.insert(idx1, path[i][2])
                 idx2 += 1
             
-            op1 = self.get_fence_path_direction(verticies, idx1, idx2)
+            op1 = self.get_fence_path_direction(verticies, idx1, idx2, 0)
             op2 = self.get_fence_path_direction(verticies, idx1, idx2, 1)
 
-            output.append(op1[1] if op1[0] < op2[0] else op2[1])
+            output.append(op1[1] if op1[0] < op2[0] else op2[1])  # Append the shortest distance option
         return output

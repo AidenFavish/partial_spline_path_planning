@@ -152,7 +152,6 @@ class WaypointManager:
                 better_path = better_path + [(_pt[0], _pt[1], pt[2]) for _pt in fix]
                 replace = True
             elif len(pairs) > 1 and pt is pairs[1][1]:
-                
                 replace = False
                 pairs.pop(0)
                 pairs.pop(0)
