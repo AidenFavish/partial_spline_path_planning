@@ -139,7 +139,7 @@ class WaypointManager:
                 
         return pairs
     
-    def get_better_path(self, path: list[tuple[float, float, float]], fence: PolygonGeofence):
+    def get_better_path(self, path: list[tuple[float, float, float]], fence: PolygonGeofence, segment_distance=0.2):
         pairs = self.get_collision_pairs(path, fence)
         
         fence_fixes = fence.get_fence_path(fence.polygon, pairs)
@@ -149,7 +149,8 @@ class WaypointManager:
         for pt in path:
             if len(pairs) > 1 and pt is pairs[0][0]:
                 fix = fence_fixes.pop(0)
-                better_path = better_path + [(_pt[0], _pt[1], pt[2]) for _pt in fix]
+                fixed_points =  [(_pt[0], _pt[1], pt[2]) for _pt in fix]
+                better_path += self.densify_points(fixed_points, segment_distance)
                 replace = True
             elif len(pairs) > 1 and pt is pairs[1][1]:
                 replace = False
@@ -158,6 +159,33 @@ class WaypointManager:
             elif not replace:
                 better_path.append(pt)
         return better_path
+
+    def densify_points(self, points: list[tuple[float, float, float]], target_distance: float) -> list[tuple[float, float, float]]:
+        """
+        Densifies a list of 3D points by inserting additional points linearly between them 
+        to meet the target distance between consecutive points. Original points are always included.
+
+        Args:
+            points: List of (x, y, z) tuples representing the path.
+            target_distance: Desired distance between consecutive points.
+
+        Returns:
+            A new list of points with added interpolated points.
+        """
+        points = np.array(points)
+        new_points = []
+
+        for p1, p2 in zip(points[:-1], points[1:]):
+            segment_length = np.linalg.norm(p2 - p1)
+            num_segments = max(int(np.ceil(segment_length / target_distance)), 1)  # Ensure at least one segment
+
+            interpolated = np.linspace(p1, p2, num_segments + 1, endpoint=False)  # Includes p1, excludes p2
+            new_points.extend(map(tuple, interpolated))
+
+        new_points.append(tuple(points[-1]))  # Ensure last original point is added
+
+        return new_points
+
     
 if __name__ == "__main__":
     vertices = [(0, 0), (4, 0), (4, 4), (3.3, 3.3), (3.2, 2.7), (3.1, 3.1), (2, 2), (0, 4)]  # Example geofence with an inward cut
@@ -169,6 +197,6 @@ if __name__ == "__main__":
 
     fig, ax = geofence.visualize()
     spline, wp_indicies = manager.generate_spline(0.1)
-    better = manager.get_better_path(spline, geofence)
+    better = manager.get_better_path(spline, geofence, 0.15)
     manager.visualize(better, ax)
     plt.show()
