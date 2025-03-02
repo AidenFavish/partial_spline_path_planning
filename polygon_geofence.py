@@ -23,7 +23,9 @@ class PolygonGeofence:
         ax.grid()
         return (fig, ax)
     
-    def get_verticies(self, fence: Polygon):
+    def get_verticies(self, fence: Polygon=None):
+        if fence is None:
+            fence = self.polygon
         return fence.exterior.coords[:]
     
     def get_wedged_index(self, fence: Polygon, point: tuple[float, float]) -> int:

@@ -120,7 +120,7 @@ class WaypointManager:
 
         subplot_ax.legend()
 
-    def get_collision_pairs(self, path: list[tuple[float, float, float]], fence: Polygon) -> list[tuple[tuple[float, float], tuple[float, float], tuple[float, float]]]:
+    def get_collision_pairs(self, path: list[tuple[float, float, float]], fence: PolygonGeofence) -> list[tuple[tuple[float, float], tuple[float, float], tuple[float, float]]]:
         """
         Returns a list of tuple pairs containing the indicies of a medium point whose lines
         intersect the passed in geofence.
@@ -128,7 +128,7 @@ class WaypointManager:
         pairs = []
         for i in range(len(path) - 1):
             line = LineString([(float(path[i][0]), float(path[i][1])), (float(path[i+1][0]), float(path[i+1][1]))])
-            vertices = fence.exterior.coords[:]
+            vertices = fence.get_verticies()
             for j in range(len(vertices) - 1):
                 line2 = LineString([vertices[j], vertices[j + 1]])
                 p = line.intersects(line2)
@@ -140,7 +140,7 @@ class WaypointManager:
         return pairs
     
     def get_better_path(self, path: list[tuple[float, float, float]], fence: PolygonGeofence):
-        pairs = self.get_collision_pairs(path, fence.polygon)
+        pairs = self.get_collision_pairs(path, fence)
         
         fence_fixes = fence.get_fence_path(fence.polygon, pairs)
         print(fence_fixes)
